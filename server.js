@@ -9,23 +9,24 @@ db.prepare(
   `
   CREATE TABLE IF NOT EXISTS users (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    username TEXT UNIQUE,
-    password TEXT
+    username string UNIQUE,
+    password string
   )
 `,
 ).run();
+
 module.exports = db;
 app.use(express.json());
+app.use(express.static("public"));
 
 app.listen(port, () => {
   console.log(`Server listening on port ${port}`);
 });
 
-app.post("/register", (req, res) => {
+app.post("/register", async (req, res) => {
   const username = req.body.username;
   const password = req.body.password;
-  console.log("username", username);
-  console.log("password", password);
+
   if (!username || !password) {
     return res.status(400).send("Missing username or password");
   }
@@ -39,7 +40,7 @@ app.post("/register", (req, res) => {
     return res.status(400).send("Username already exists");
   }
 
-  const passwordHash = bcrypt.hash(password, 12);
+  const passwordHash = await bcrypt.hash(password, 12);
   db.prepare("INSERT INTO users (username, password) VALUES (?, ?)").run(
     username,
     passwordHash,
