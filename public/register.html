@@ -14,7 +14,13 @@
   </head>
   <body>
     <h1>Register</h1>
+    <button onclick="logout()">Se déconnecter</button>
     <form action="/register" method="post" class="container" ,>
+      <div
+        id="error-message"
+        class="alert alert-danger d-none"
+        role="alert"
+      ></div>
       <div class="mb-3">
         <label for="username">Username:</label>
         <input type="text" id="username" name="username" class="form-control" />
@@ -29,6 +35,7 @@
         />
       </div>
       <button type="submit" class="btn btn-primary">Register</button>
+      <button class="btn btn-danger" onclick="logout()">Se déconnecter</button>
     </form>
   </body>
 </html>
