@@ -1,1 +1,3 @@
 bdd.db
+node_modules
+.env
