@@ -15,13 +15,21 @@
   </head>
   <body class="bg-dark text-light">
     <div class="container py-5">
-      <h1 class="mb-4">Bienvenue, Justicier <span id="username"></span></h1>
+      <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="mb-0">Bienvenue, Justicier <span id="username"></span></h1>
+        <button id="logout-btn" class="btn btn-outline-light btn-sm">Déconnexion</button>
+      </div>
 
       <h2 class="h4 mb-3">Arsenal</h2>
       <div id="gadgets" class="row g-3"></div>
     </div>
 
     <script>
+      document.querySelector("#logout-btn").addEventListener("click", async () => {
+        await fetch("/logout", { method: "POST" });
+        window.location.href = "/login.html";
+      });
+
       document.addEventListener("DOMContentLoaded", async () => {
         try {
           // L'utilisateur
@@ -29,7 +37,7 @@
           const user = await response.json();
           document.querySelector("#username").textContent = user.name;
 
-          // Les gadgets (tableau)
+          // Les gadgets
           const gadgetsResponse = await fetch("/api/secrets");
           const gadgets = await gadgetsResponse.json();
 
