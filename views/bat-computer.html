@@ -16,50 +16,22 @@
   <body class="bg-dark text-light">
     <div class="container py-5">
       <div class="d-flex justify-content-between align-items-center mb-4">
-        <h1 class="mb-0">Bienvenue, Justicier <span id="username"></span></h1>
-        <button id="logout-btn" class="btn btn-outline-light btn-sm">Déconnexion</button>
+        <div>
+          <h1 class="mb-0">Bienvenue, Justicier <span id="username"></span></h1>
+          <p class="mb-0 text-muted">
+            <span id="user-email"></span>
+            <span id="user-role" class="badge bg-secondary ms-2"></span>
+          </p>
+        </div>
+        <button id="logout-btn" class="btn btn-outline-light btn-sm">
+          Déconnexion
+        </button>
       </div>
 
       <h2 class="h4 mb-3">Arsenal</h2>
       <div id="gadgets" class="row g-3"></div>
     </div>
 
-    <script>
-      document.querySelector("#logout-btn").addEventListener("click", async () => {
-        await fetch("/logout", { method: "POST" });
-        window.location.href = "/login.html";
-      });
-
-      document.addEventListener("DOMContentLoaded", async () => {
-        try {
-          // L'utilisateur
-          const response = await fetch("/api/me");
-          const user = await response.json();
-          document.querySelector("#username").textContent = user.name;
-
-          // Les gadgets
-          const gadgetsResponse = await fetch("/api/secrets");
-          const gadgets = await gadgetsResponse.json();
-
-          const container = document.querySelector("#gadgets");
-          gadgets.forEach((gadget) => {
-            const col = document.createElement("div");
-            col.className = "col-12 col-md-6 col-lg-4";
-            col.innerHTML = `
-              <div class="card h-100 shadow-sm">
-                <div class="card-body">
-                  <h5 class="card-title">
-                    <i class="fa-solid ${gadget.icon} me-2"></i>${gadget.name}
-                  </h5>
-                  <p class="card-text text-muted">${gadget.desc}</p>
-                </div>
-              </div>`;
-            container.appendChild(col);
-          });
-        } catch (e) {
-          console.error("Erreur de chargement :", e);
-        }
-      });
-    </script>
+    <script src="/dashboard.js" defer></script>
   </body>
 </html>

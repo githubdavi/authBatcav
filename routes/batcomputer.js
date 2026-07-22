@@ -1,7 +1,7 @@
 const express = require("express");
 const path = require("path");
 const db = require("../config/db");
-const { basicAuthCheck, isAuthenticated } = require("../middlewares/checkAuth");
+const { basicAuthCheck, checkJWT } = require("../middlewares/checkAuth");
 
 const router = express.Router();
 
@@ -19,16 +19,16 @@ router.post("/api/reports", basicAuthCheck, (req, res) => {
 
 // ROUTE GET
 
-router.get("/api/me", isAuthenticated, (req, res) => {
+router.get("/api/me", checkJWT, (req, res) => {
   const user = req.user;
-  res.json({ id: user.id, name: user.username });
+  res.json({ id: user.id, name: user.username, role: user.role });
 });
 
-router.get("/bat-computer", isAuthenticated, (req, res) => {
+router.get("/bat-computer", (req, res) => {
   res.sendFile(path.join(__dirname, "..", "views", "bat-computer.html"));
 });
 
-router.get("/api/secrets", isAuthenticated, (req, res) => {
+router.get("/api/secrets", checkJWT, (req, res) => {
   res.json([
     { name: "Batarang", desc: "Arme de jet", icon: "fa-shuriken" },
     { name: "Grappin", desc: "Système d'accrochage", icon: "fa-hooks" },
