@@ -23,6 +23,13 @@ db.exec(`
   );
 INSERT OR IGNORE INTO users (username, password, role)
 VALUES ('admin', '$2b$12$Cyc1Sw7dhqGepUEib6y2QOnm44J/ZudiKQiVo.xkDPRpu3UQer62y', 'ADMIN');
-`);
+
+  CREATE TABLE IF NOT EXISTS refresh_tokens (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    token TEXT UNIQUE NOT NULL,
+    user_id INTEGER NOT NULL,
+    expires_at TEXT NOT NULL,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+  );`);
 
 module.exports = db;

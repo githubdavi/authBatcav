@@ -1,4 +1,5 @@
 const bcrypt = require("bcrypt");
+const jwt = require("jsonwebtoken");
 const db = require("../config/db");
 
 function basicAuthCheck(req, res, next) {
@@ -34,12 +35,19 @@ function basicAuthCheck(req, res, next) {
   next();
 }
 
-function isAuthenticated(req, res, next) {
-  if (!req.session.user) {
-    return res.redirect("/login.html");
+function checkJWT(req, res, next) {
+  const token = req.cookies?.JWT;
+  if (!token) {
+    return res.status(401).json({ erreur: "Accès non autorisé (jeton absent)." });
   }
-  req.user = req.session.user;
-  next();
+
+  try {
+    const payload = jwt.verify(token, process.env.JWT_SECRET);
+    req.user = payload;
+    next();
+  } catch (err) {
+    return res.status(401).json({ erreur: "Jeton d'accès invalide ou expiré." });
+  }
 }
 
 function insertLog(username, id) {
@@ -47,4 +55,4 @@ function insertLog(username, id) {
   sql.run(username, id);
 }
 
-module.exports = { basicAuthCheck, isAuthenticated };
+module.exports = { basicAuthCheck, checkJWT };

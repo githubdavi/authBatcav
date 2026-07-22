@@ -1,7 +1,9 @@
 const express = require("express");
 const path = require("path");
 const bcrypt = require("bcrypt");
+const jwt = require("jsonwebtoken");
 const db = require("../config/db");
+const { checkJWT } = require("../middlewares/checkAuth");
 
 const router = express.Router();
 
@@ -32,7 +34,7 @@ router.post("/register", async (req, res) => {
 
   const passwordHash = await bcrypt.hash(password, 12);
   db.prepare("INSERT INTO users (username, password) VALUES (?, ?)").run(
-    username,
+    username.trim().toLowerCase(),
     passwordHash,
   );
   res.status(201).send("User registered successfully");
@@ -41,41 +43,122 @@ router.post("/register", async (req, res) => {
 // ROUTE POST
 
 router.post("/logout", (req, res) => {
-  req.session.destroy((err) => {
-    if (err) {
-      return res.status(500).send("Erreur lors de la déconnexion.");
-    }
-    res.clearCookie("bat_identity");
-    res.redirect("/login.html");
-  });
+  const refreshToken = req.cookies?.refreshToken;
+  if (refreshToken) {
+    db.prepare("DELETE FROM refresh_tokens WHERE token = ?").run(refreshToken);
+  }
+
+  res.clearCookie("JWT");
+  res.clearCookie("refreshToken");
+  res.redirect("/login.html");
 });
 
-router.post("/auth/login", (req, res) => {
-  const user = db
-    .prepare("SELECT * FROM users WHERE username = ?")
-    .get(req.body.username);
-  if (!user) {
-    return res.status(401).send("Authentification ratée.");
+const crypto = require("crypto");
+
+router.post("/auth/login", async (req, res) => {
+  const { username, password } = req.body;
+  try {
+    const user = db
+      .prepare("SELECT * FROM users WHERE username = ?")
+      .get(username?.trim().toLowerCase());
+    if (!user || !(await bcrypt.compare(password, user.password))) {
+      return res.status(401).json({ erreur: "Identifiants incorrects" });
+    }
+
+    const token = jwt.sign(
+      { id: user.id, username: user.username, role: user.role },
+      process.env.JWT_SECRET,
+      { expiresIn: "15s" },
+    );
+
+    const refreshToken = crypto.randomBytes(40).toString("hex");
+    const expiresAt = new Date(
+      Date.now() + 7 * 24 * 60 * 60 * 1000,
+    ).toISOString();
+
+    db.prepare(
+      "INSERT INTO refresh_tokens (token, user_id, expires_at) VALUES (?, ?, ?)",
+    ).run(refreshToken, user.id, expiresAt);
+
+    res.cookie("JWT", token, {
+      httpOnly: true,
+      sameSite: "strict",
+      maxAge: 15000,
+    });
+    res.cookie("refreshToken", refreshToken, {
+      httpOnly: true,
+      sameSite: "strict",
+      maxAge: 7 * 24 * 60 * 60 * 1000,
+    });
+
+    res.redirect("/bat-computer");
+  } catch (error) {
+    res.status(500).send("Erreur lors de la connexion.");
   }
-  const isPasswordValid = bcrypt.compareSync(req.body.password, user.password);
-  if (!isPasswordValid) {
-    return res.status(401).send("Authentification ratée.");
+});
+
+router.post("/api/auth/refresh", (req, res) => {
+  const refreshToken = req.cookies?.refreshToken;
+  if (!refreshToken) return res.status(401).json({ erreur: "Accès refusé" });
+
+  const storedToken = db
+    .prepare("SELECT * FROM refresh_tokens WHERE token = ?")
+    .get(refreshToken);
+
+  if (!storedToken || new Date() > new Date(storedToken?.expires_at)) {
+    return res
+      .status(401)
+      .json({ erreur: "Session expirée, reconnectez-vous" });
   }
 
-  req.session.regenerate((err) => {
-    if (err) {
-      return res.status(500).send("Erreur lors de la connexion.");
-    }
-    req.session.user = user;
-    req.session.save((err) => {
-      if (err) {
-        return res
-          .status(500)
-          .send("Erreur lors de la sauvegarde de la session.");
-      }
-      res.redirect("/bat-computer");
-    });
+  const user = db
+    .prepare("SELECT * FROM users WHERE id = ?")
+    .get(storedToken.user_id);
+  const newToken = jwt.sign(
+    { id: user.id, username: user.username, role: user.role },
+    process.env.JWT_SECRET,
+    { expiresIn: "15s" },
+  );
+
+  res.cookie("JWT", newToken, {
+    httpOnly: true,
+    sameSite: "strict",
+    maxAge: 15000,
   });
+  res.json({ message: "Jeton d'accès rafraîchi." });
+});
+
+router.post("/api/auth/change-password", checkJWT, async (req, res) => {
+  const { currentPassword, newPassword } = req.body;
+  if (!currentPassword || !newPassword) {
+    return res.status(400).json({ erreur: "Champs manquants." });
+  }
+  const passwordPolicy =
+    /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{12,}$/;
+  if (!passwordPolicy.test(newPassword)) {
+    return res.status(400).json({
+      erreur:
+        "Le mot de passe doit contenir au moins 12 caractères, une majuscule, une minuscule, un chiffre et un caractère spécial.",
+    });
+  }
+  if (currentPassword === newPassword) {
+    return res
+      .status(400)
+      .json({ erreur: "Ancien et nouveau mot de passe identiques." });
+  }
+
+  const user = db.prepare("SELECT * FROM users WHERE id = ?").get(req.user.id);
+  const isPasswordValid = await bcrypt.compare(currentPassword, user.password);
+  if (!isPasswordValid) {
+    return res.status(401).json({ erreur: "Mot de passe actuel incorrect." });
+  }
+
+  const newPasswordHash = await bcrypt.hash(newPassword, 12);
+  db.prepare("UPDATE users SET password = ? WHERE id = ?").run(
+    newPasswordHash,
+    req.user.id,
+  );
+  res.json({ message: "Mot de passe changé avec succès." });
 });
 
 module.exports = router;
