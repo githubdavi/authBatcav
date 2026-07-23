@@ -8,7 +8,11 @@ db.exec(`
     password TEXT,
     role TEXT,
 two_factor_secret TEXT,
-two_factor_enabled INTEGER DEFAULT 0
+two_factor_enabled INTEGER DEFAULT 0,
+    provider TEXT NOT NULL DEFAULT 'local',
+    provider_user_id TEXT,
+    email TEXT,
+    display_name TEXT
   );
   CREATE TABLE IF NOT EXISTS reports (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
