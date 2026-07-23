@@ -50,9 +50,29 @@ function checkJWT(req, res, next) {
   }
 }
 
+function checkSetupToken(req, res, next) {
+  const token = req.cookies?.setupToken;
+  if (!token) {
+    return res.status(401).json({ erreur: "Jeton de configuration absent." });
+  }
+
+  try {
+    const payload = jwt.verify(token, process.env.JWT_SECRET);
+    if (!payload.setup) {
+      return res.status(403).json({ erreur: "Jeton de configuration requis." });
+    }
+    req.user = payload;
+    next();
+  } catch (err) {
+    return res
+      .status(401)
+      .json({ erreur: "Jeton de configuration invalide ou expiré." });
+  }
+}
+
 function insertLog(username, id) {
   const sql = db.prepare("INSERT INTO logs (username, user_id) VALUES (?, ?)");
   sql.run(username, id);
 }
 
-module.exports = { basicAuthCheck, checkJWT };
+module.exports = { basicAuthCheck, checkJWT, checkSetupToken };

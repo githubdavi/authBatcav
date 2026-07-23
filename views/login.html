@@ -18,7 +18,7 @@
         <div class="card-body">
           <h1 class="h4 mb-3 text-center">Connexion</h1>
           <div id="error-message" class="alert alert-danger d-none"></div>
-          <form>
+          <form id="login-form">
             <div class="mb-3">
               <input
                 type="text"
@@ -41,6 +41,21 @@
             </div>
             <button type="submit" class="btn btn-primary w-100">Se connecter</button>
           </form>
+
+          <form id="twofa-form" class="d-none">
+            <label for="totp" class="form-label">Code à 6 chiffres</label>
+            <input
+              type="text"
+              id="totp"
+              class="form-control mb-3"
+              inputmode="numeric"
+              maxlength="6"
+              placeholder="123456"
+              required
+            />
+            <button type="submit" class="btn btn-success w-100">Vérifier</button>
+          </form>
+
           <p class="text-center mt-3 mb-0">
             <a href="/register.html">Pas encore inscrit ? S'inscrire</a>
           </p>
