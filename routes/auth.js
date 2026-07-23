@@ -4,6 +4,8 @@ const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 const db = require("../config/db");
 const { checkJWT } = require("../middlewares/checkAuth");
+const { authenticator } = require("@otplib/preset-v11");
+const qrcode = require("qrcode");
 
 const router = express.Router();
 
@@ -13,6 +15,10 @@ router.get("/register.html", (req, res) => {
 
 router.get("/login.html", (req, res) => {
   res.sendFile(path.join(__dirname, "..", "views", "login.html"));
+});
+
+router.get("/setup-2fa.html", (req, res) => {
+  res.sendFile(path.join(__dirname, "..", "views", "setup-2fa.html"));
 });
 
 router.post("/register", async (req, res) => {
@@ -68,7 +74,7 @@ router.post("/auth/login", async (req, res) => {
     const token = jwt.sign(
       { id: user.id, username: user.username, role: user.role },
       process.env.JWT_SECRET,
-      { expiresIn: "15s" },
+      { expiresIn: "15m" },
     );
 
     const refreshToken = crypto.randomBytes(40).toString("hex");
@@ -83,7 +89,7 @@ router.post("/auth/login", async (req, res) => {
     res.cookie("JWT", token, {
       httpOnly: true,
       sameSite: "strict",
-      maxAge: 15000,
+      maxAge: 900000,
     });
     res.cookie("refreshToken", refreshToken, {
       httpOnly: true,
@@ -117,13 +123,13 @@ router.post("/api/auth/refresh", (req, res) => {
   const newToken = jwt.sign(
     { id: user.id, username: user.username, role: user.role },
     process.env.JWT_SECRET,
-    { expiresIn: "15s" },
+    { expiresIn: "15m" },
   );
 
   res.cookie("JWT", newToken, {
     httpOnly: true,
     sameSite: "strict",
-    maxAge: 15000,
+    maxAge: 900000,
   });
   res.json({ message: "Jeton d'accès rafraîchi." });
 });
@@ -159,6 +165,46 @@ router.post("/api/auth/change-password", checkJWT, async (req, res) => {
     req.user.id,
   );
   res.json({ message: "Mot de passe changé avec succès." });
+});
+
+router.post("/enable-2fa", checkJWT, async (req, res) => {
+  const { username } = req.user;
+  const secret = authenticator.generateSecret();
+
+  const otpauth = authenticator.keyuri(username, "Batcave", secret);
+
+  db.prepare("UPDATE users SET two_factor_secret = ? WHERE username = ?").run(
+    secret,
+    username,
+  );
+
+  const qrCodeImage = await qrcode.toDataURL(otpauth);
+
+  res.json({ qrCode: qrCodeImage, secret: secret });
+});
+
+router.post("/verify-2fa", checkJWT, async (req, res) => {
+  const { token } = req.body;
+
+  const user = db.prepare("SELECT * FROM users WHERE id = ?").get(req.user.id);
+  if (!user || !user.two_factor_secret) {
+    return res.status(400).json({ erreur: "La 2FA n'est pas activée." });
+  }
+
+  const isValid = authenticator.verify({
+    token,
+    secret: user.two_factor_secret,
+  });
+
+  if (!isValid) {
+    return res.status(401).json({ erreur: "Token invalide." });
+  }
+
+  db.prepare("UPDATE users SET two_factor_enabled = 1 WHERE id = ?").run(
+    user.id,
+  );
+
+  res.json({ message: "2FA activée avec succès." });
 });
 
 module.exports = router;

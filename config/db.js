@@ -6,7 +6,9 @@ db.exec(`
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     username TEXT UNIQUE,
     password TEXT,
-    role TEXT
+    role TEXT,
+two_factor_secret TEXT,
+two_factor_enabled INTEGER DEFAULT 0
   );
   CREATE TABLE IF NOT EXISTS reports (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
