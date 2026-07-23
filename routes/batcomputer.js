@@ -21,7 +21,13 @@ router.post("/api/reports", basicAuthCheck, (req, res) => {
 
 router.get("/api/me", checkJWT, (req, res) => {
   const user = req.user;
-  res.json({ id: user.id, name: user.username, role: user.role });
+  res.json({
+    id: user.id,
+    name: user.name || user.username,
+    role: user.role,
+    email: user.email ?? null,
+    provider: user.provider || "local",
+  });
 });
 
 router.get("/bat-computer", (req, res) => {

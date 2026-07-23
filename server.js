@@ -8,6 +8,7 @@ const helmet = require("helmet");
 require("./config/db");
 
 const authRoutes = require("./routes/auth");
+const oauthRoutes = require("./routes/oauth");
 const batcomputerRoutes = require("./routes/batcomputer");
 const cookieParser = require("cookie-parser");
 
@@ -26,7 +27,10 @@ app.use(cookieParser());
 app.use(express.json());
 app.use(express.static("public"));
 
+app.get("/", (req, res) => res.redirect("/login.html"));
+
 app.use(authRoutes);
+app.use(oauthRoutes);
 app.use(batcomputerRoutes);
 
 app.listen(port, () => {

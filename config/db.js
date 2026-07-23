@@ -34,4 +34,9 @@ VALUES ('admin', '$2b$12$Cyc1Sw7dhqGepUEib6y2QOnm44J/ZudiKQiVo.xkDPRpu3UQer62y',
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
   );`);
 
+db.exec(`
+  CREATE UNIQUE INDEX IF NOT EXISTS idx_users_provider_identity
+    ON users (provider, provider_user_id);
+`);
+
 module.exports = db;
