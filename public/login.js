@@ -38,6 +38,7 @@ document.addEventListener("DOMContentLoaded", () => {
       pendingUsername = data.username;
       loginForm.classList.add("d-none");
       twofaForm.classList.remove("d-none");
+      document.getElementById("oauth-block")?.classList.add("d-none");
       return;
     }
 

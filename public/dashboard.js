@@ -28,6 +28,15 @@ fetchWithRetry("/api/me")
       document.getElementById("username").innerText = data.name;
       document.getElementById("user-email").innerText = data.email ?? "";
       document.getElementById("user-role").innerText = data.role ?? "";
+
+      const providerLabels = {
+        local: "Compte Batcave",
+        google: "via Google",
+        github: "via GitHub",
+        facebook: "via Facebook",
+      };
+      document.getElementById("user-provider").innerText =
+        providerLabels[data.provider] ?? "";
     }
   })
   .catch((err) => console.error("Erreur d'affichage :", err));
