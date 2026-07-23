@@ -12,16 +12,20 @@ document.addEventListener("DOMContentLoaded", () => {
 
   generateBtn.addEventListener("click", async () => {
     errorBox.classList.add("d-none");
+    const username = document.getElementById("username").value.trim();
+
+    if (!username) {
+      showError("Veuillez saisir un nom d'utilisateur.");
+      return;
+    }
 
     try {
-      const res = await fetch("/enable-2fa", { method: "POST" });
+      const res = await fetch("/enable-2fa", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ username }),
+      });
 
-      if (res.status === 401) {
-        showError(
-          'Vous devez être connecté. <a href="/login.html">Se connecter</a>',
-        );
-        return;
-      }
       if (!res.ok) {
         showError("Impossible de générer le QR code.");
         return;
@@ -39,12 +43,13 @@ document.addEventListener("DOMContentLoaded", () => {
   verifyForm.addEventListener("submit", async (e) => {
     e.preventDefault();
     verifyMsg.textContent = "";
+    const username = document.getElementById("username").value.trim();
     const token = document.getElementById("totp").value.trim();
 
     const res = await fetch("/verify-2fa", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ token }),
+      body: JSON.stringify({ username, token }),
     });
     const data = await res.json();
 

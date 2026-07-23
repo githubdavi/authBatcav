@@ -17,11 +17,20 @@
           <h1 class="h4 mb-3 text-center">Double authentification (2FA)</h1>
           <div id="error-message" class="alert alert-danger d-none"></div>
 
-          <p class="text-center mb-3">
-            <button id="generate-btn" class="btn btn-primary">
-              Générer mon QR code
-            </button>
-          </p>
+          <div class="mb-3">
+            <label for="username" class="form-label">Nom d'utilisateur</label>
+            <div class="input-group">
+              <input
+                type="text"
+                id="username"
+                class="form-control"
+                placeholder="admin"
+              />
+              <button id="generate-btn" class="btn btn-primary">
+                Générer le QR
+              </button>
+            </div>
+          </div>
 
           <div id="qr-section" class="text-center d-none">
             <p class="mb-2">Scannez ce QR code avec Google Authenticator :</p>
